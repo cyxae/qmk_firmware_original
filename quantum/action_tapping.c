@@ -312,7 +312,7 @@ bool process_tapping(keyrecord_t *keyp) {
                     // enqueue
                     return false;
                 }
-#    if defined(CHORDAL_HOLD)
+#    if defined(CHORDAL_HOLD) && !defined(CHORDAL_HOLD_NO_IMMEDIATE_TAP)
                 else if (is_mt_or_lt(tapping_keycode) && !event.pressed && waiting_buffer_typed(event) && !get_chordal_hold(tapping_keycode, &tapping_key, get_record_keycode(keyp, false), keyp)) {
                     // Key release that is not a chord with the tapping key.
                     // Settle the tapping key and any other pending tap-hold
@@ -338,6 +338,10 @@ bool process_tapping(keyrecord_t *keyp) {
                 // clang-format off
                 else if (
                     !event.pressed && waiting_buffer_typed(event) &&
+#    if defined(CHORDAL_HOLD) && defined(CHORDAL_HOLD_NO_IMMEDIATE_TAP)
+                    // Skip permissive hold for same-hand keys when CHORDAL_HOLD_NO_IMMEDIATE_TAP is enabled
+                    get_chordal_hold(tapping_keycode, &tapping_key, get_record_keycode(keyp, false), keyp) &&
+#    endif
                     (
                         TAP_GET_PERMISSIVE_HOLD ||
                         // Causes nested taps to not wait past TAPPING_TERM/RETRO_SHIFT
@@ -420,7 +424,7 @@ bool process_tapping(keyrecord_t *keyp) {
                     if (event.pressed) {
                         tapping_key.tap.interrupted = true;
 
-#    if defined(CHORDAL_HOLD)
+#    if defined(CHORDAL_HOLD) && !defined(CHORDAL_HOLD_NO_IMMEDIATE_TAP)
                         if (is_mt_or_lt(tapping_keycode) && !get_chordal_hold(tapping_keycode, &tapping_key, get_record_keycode(keyp, false), keyp)) {
                             // In process_action(), HOLD_ON_OTHER_KEY_PRESS
                             // will revert interrupted events to holds, so
@@ -438,6 +442,10 @@ bool process_tapping(keyrecord_t *keyp) {
                         } else
 #    endif // CHORDAL_HOLD
                             if (TAP_GET_HOLD_ON_OTHER_KEY_PRESS
+#    if defined(CHORDAL_HOLD) && defined(CHORDAL_HOLD_NO_IMMEDIATE_TAP)
+                    // Skip hold on other key press for same-hand keys when CHORDAL_HOLD_NO_IMMEDIATE_TAP is enabled
+                    && get_chordal_hold(tapping_keycode, &tapping_key, get_record_keycode(keyp, false), keyp)
+#    endif
 #    if defined(AUTO_SHIFT_ENABLE) && defined(RETRO_SHIFT)
                                 // Auto Shift cannot evaluate this early
                                 // Retro Shift uses the hold action for all nested taps even without HOLD_ON_OTHER_KEY_PRESS, so this is fine to skip
